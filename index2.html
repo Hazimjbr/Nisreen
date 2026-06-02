@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>متجر الصغار - تحدي المشتري الذكي</title>
+    <style>
+        /* التنسيقات العامة والمستجيبة */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #fdf0f5; margin: 0; padding: 10px; display: flex; justify-content: center; align-items: center; min-height: 100vh; box-sizing: border-box; overflow-x: hidden; }
+        
+        #game-wrapper { width: 100%; max-width: 800px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        
+        /* واجهة التعليمات المستجيبة */
+        #ui-bar { width: 100%; background-color: #8e44ad; color: white; padding: 12px 15px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.15); box-sizing: border-box; border: 3px solid #fff; flex-wrap: wrap; gap: 10px; }
+        #instruction-text { font-size: 18px; font-weight: bold; color: #fff200; text-shadow: 1px 1px 2px #000; text-align: center; flex: 1; }
+        #level-text { font-size: 16px; background: rgba(0,0,0,0.2); padding: 5px 10px; border-radius: 20px;}
+        
+        .pulse-text { animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+
+        /* حاوية اللعبة المرنة */
+        #game-container { width: 100%; height: 620px; background: linear-gradient(to bottom, #f7d9ea, #e8b4d6); border-radius: 20px; position: relative; transition: transform 0.8s ease-in-out, transform-origin 0.8s ease-in-out; border: 6px solid #d385c9; box-shadow: 0 10px 25px rgba(0,0,0,0.15); overflow: hidden; box-sizing: border-box;}
+
+        /* لافتة المتجر */
+        .shop-banner { text-align: center; background-color: #b062b5; color: white; padding: 10px; font-size: 22px; font-weight: bold; border-bottom: 4px solid #8e44ad; }
+
+        /* منطقة الفواكه المتجاوبة */
+        #fruits-area { display: flex; justify-content: space-around; margin-top: 15px; padding: 0 10px; gap: 8px;}
+        .fruit-box { background-color: #e593cc; padding: 8px; border-radius: 12px; text-align: center; width: 30%; max-width: 110px; border: 2px solid #fff; box-shadow: 0 3px 6px rgba(0,0,0,0.1); box-sizing: border-box;}
+        .fruit-box h3 { margin: 0 0 5px 0; color: #fff; font-size: 12px; text-shadow: 1px 1px 1px #000; }
+        .fruit-item { font-size: 40px; cursor: pointer; user-select: none; transition: transform 0.2s; display: inline-block;}
+        
+        .highlight-target { animation: glow 1s infinite alternate; border-color: #fff200 !important; }
+        @keyframes glow { from { box-shadow: 0 0 5px #fff200; } to { box-shadow: 0 0 15px #fff200; } }
+
+        /* الميزان الافتراضي */
+        #scale-area { position: absolute; bottom: 120px; left: 50px; text-align: center; background: #fff; padding: 12px; border-radius: 15px; border: 3px solid #b062b5; box-shadow: 0 6px 12px rgba(0,0,0,0.15); z-index: 1;}
+        #scale-plate { width: 110px; height: 50px; background-color: #e0e0e0; border-radius: 8px; margin: 0 auto 8px; border-bottom: 6px solid #95a5a6; display: flex; justify-content: center; align-items: flex-end; font-size: 24px; padding-bottom: 3px; box-sizing: border-box;}
+        #scale-screen { background-color: #2c3e50; color: #00ff00; font-family: monospace; padding: 6px 12px; border-radius: 6px; font-size: 18px; font-weight: bold; border: 2px inset #7f8c8d; }
+
+        /* منطقة الدفع المرنة */
+        #payment-area { position: absolute; bottom: 15px; right: 20px; display: flex; gap: 10px; background: #fff; padding: 12px; border-radius: 18px; border: 3px solid #b062b5; box-shadow: 0 6px 12px rgba(0,0,0,0.15); z-index: 5; 
+            transform: scale(0.3); 
+            transform-origin: bottom right; 
+            opacity: 0.2; 
+            pointer-events: none; 
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        }
+        #payment-area.active { transform: scale(1); opacity: 1; pointer-events: auto; }
+        
+        .wallet { background-color: #f1c40f; padding: 10px; border-radius: 12px; display: flex; flex-wrap: wrap; width: 150px; gap: 6px; border: 2px solid #e67e22; justify-content: center;}
+        
+        /* تصميم العملات والأوراق */
+        .money-item { display: flex; justify-content: center; align-items: center; font-weight: bold; color: white; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: transform 0.1s; text-shadow: 1px 1px 1px rgba(0,0,0,0.4);}
+        .money-item:hover { transform: scale(1.1); }
+        
+        .val-1 { width: 30px; height: 30px; border-radius: 50%; background: radial-gradient(circle, #f1c40f, #e67e22); border: 2px solid #d35400; font-size: 14px;}
+        .val-5 { width: 42px; height: 26px; border-radius: 4px; background: #e74c3c; border: 2px solid #c0392b; font-size: 13px;}
+        .val-10 { width: 42px; height: 26px; border-radius: 4px; background: #3498db; border: 2px solid #2980b9; font-size: 13px;}
+        .val-20 { width: 42px; height: 26px; border-radius: 4px; background: #2ecc71; border: 2px solid #27ae60; font-size: 13px;}
+
+        #cash-register { width: 110px; background-color: #34495e; border-radius: 12px; text-align: center; color: white; padding: 10px; border: 3px solid #2c3e50; display: flex; flex-direction: column; justify-content: space-between;}
+        #paid-amount-text { font-size: 18px; color: #2ecc71; font-weight: bold; background: #111; padding: 4px; border-radius: 4px; margin: 8px 0; border: 2px inset #555;}
+        
+        .btn-group { display: flex; flex-direction: column; gap: 4px; }
+        #btn-pay { background-color: #27ae60; color: white; border: none; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; }
+        #btn-pay:hover { background-color: #2ecc71;}
+        #btn-reset { background-color: #e74c3c; color: white; border: none; padding: 4px; border-radius: 4px; cursor: pointer; font-size: 11px; }
+
+        /* شاشات الرسائل المتجاوبة */
+        .overlay-box { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 100; padding: 15px; box-sizing: border-box;}
+        .message-content { background: white; padding: 20px; border-radius: 15px; border: 4px solid #b062b5; text-align: center; font-size: 18px; font-weight: bold; box-shadow: 0 8px 30px rgba(0,0,0,0.4); width: 100%; max-width: 400px; line-height: 1.4; color: #333; box-sizing: border-box;}
+        .btn-action { background-color: #8e44ad; color: white; border: none; padding: 10px 25px; margin-top: 15px; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; }
+
+        /* كاميرا التقريب للكمبيوتر */
+        .zoom-scale { transform: scale(1.4) translate(80px, -40px); }
+        .zoom-payment { transform: scale(1.4) translate(-80px, -40px); }
+
+        .flying-element { position: fixed; pointer-events: none; z-index: 1000; transition: all 0.4s ease-in-out; }
+
+        /* =======================================================
+           📱 شاشات الهواتف المحمولة (الوضع الطولي - Portrait) 
+           ======================================================= */
+        @media (max-width: 500px) {
+            #ui-bar { padding: 10px; gap: 5px; }
+            #instruction-text { font-size: 15px; }
+            #level-text { font-size: 13px; }
+            
+            #game-container { height: 520px; border-width: 4px; }
+            .shop-banner { font-size: 18px; padding: 8px; }
+
+            #fruits-area { margin-top: 10px; }
+            .fruit-box { width: 31%; padding: 5px; border-radius: 10px; }
+            .fruit-box h3 { font-size: 10px; }
+            .fruit-item { font-size: 32px; }
+
+            /* إعادة تموضع الميزان ليتناسب مع شاشة الهاتف */
+            #scale-area { bottom: 170px; left: 15px; padding: 10px; }
+            #scale-plate { width: 90px; height: 40px; font-size: 20px; }
+            #scale-screen { font-size: 15px; padding: 4px 8px; }
+
+            /* صندوق الدفع الممتد بعرض الشاشة للهواتف لسهولة النقر */
+            #payment-area { bottom: 10px; left: 10px; right: 10px; transform: scale(0.2); transform-origin: bottom center; padding: 10px; justify-content: space-between; }
+            #payment-area.active { transform: scale(1); }
+            
+            .wallet { width: 60%; padding: 8px; gap: 4px; }
+            .money-item { box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+            .val-1 { width: 28px; height: 28px; font-size: 12px; }
+            .val-5, .val-10, .val-20 { width: 36px; height: 24px; font-size: 11px; }
+            
+            #cash-register { width: 35%; padding: 8px; }
+            #paid-amount-text { font-size: 16px; margin: 5px 0; }
+            #btn-pay { padding: 5px; font-size: 12px; }
+
+            /* كاميرا التقريب المعدلة خصيصاً للهواتف */
+            .zoom-scale { transform: scale(1.5) translate(40px, -60px); }
+            .zoom-payment { transform: scale(1.3) translate(0px, -140px); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-wrapper">
+        <!-- شريط الواجهة التفاعلي -->
+        <div id="ui-bar">
+            <span id="level-text">المرحلة: 1 / 5</span>
+            <span id="instruction-text" class="pulse-text">اضغط على زر (ابدأ) للعب</span>
+        </div>
+
+        <!-- صندوق اللعبة الرئيسي -->
+        <div id="game-container">
+            <div class="shop-banner">متجر الصغار 🌸</div>
+
+            <!-- الفواكه -->
+            <div id="fruits-area">
+                <div class="fruit-box" id="box-apple">
+                    <h3>تفاح (2 د)</h3>
+                    <div class="fruit-item" onclick="handleFruitClick('apple', this)">🍎</div>
+                </div>
+                <div class="fruit-box" id="box-lemon">
+                    <h3>ليمون (3 د)</h3>
+                    <div class="fruit-item" onclick="handleFruitClick('lemon', this)">🍋</div>
+                </div>
+                <div class="fruit-box" id="box-grape">
+                    <h3>عنب (4 د)</h3>
+                    <div class="fruit-item" onclick="handleFruitClick('grape', this)">🍇</div>
+                </div>
+            </div>
+
+            <!-- الميزان -->
+            <div id="scale-area">
+                <div id="scale-plate"></div>
+                <div id="scale-screen">0 كغم</div>
+            </div>
+
+            <!-- صندوق الدفع -->
+            <div id="payment-area">
+                <div class="wallet" id="wallet-coins"></div>
+                <div id="cash-register">
+                    <span>الدفع</span>
+                    <div id="paid-amount-text">0</div>
+                    <div class="btn-group">
+                        <button id="btn-pay" onclick="checkPayment()">دفع</button>
+                        <button id="btn-reset" onclick="resetPayment()">تراجع</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- شاشة البدء -->
+        <div id="start-screen" class="overlay-box">
+            <div class="message-content">
+                أهلاً بك في متجر الصغار! 🛒<br><br>
+                اللعبة متوافقة الآن مع الجوالات والآيباد.<br><br>
+                <b>طريقة اللعب:</b><br>
+                1. اقرأ الطلب في الأعلى.<br>
+                2. <b>انقر</b> على الفاكهة لوزنها.<br>
+                3. عندما يظهر الصندوق، ادفع المبلغ المطلوب بدقة.<br>
+                <button class="btn-action" onclick="initGame()">ابدأ اللعب!</button>
+            </div>
+        </div>
+
+        <!-- شاشة الرسائل المنبثقة -->
+        <div id="message-screen" class="overlay-box" style="display: none;">
+            <div class="message-content">
+                <p id="msg-text"></p>
+                <button class="btn-action" id="msg-btn" onclick="closeMessage()">متابعة</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const levels = [
+            { item: "apple", itemName: "تفاح 🍎", requiredKg: 1, pricePerKg: 2 },
+            { item: "lemon", itemName: "ليمون 🍋", requiredKg: 2, pricePerKg: 3 },
+            { item: "grape", itemName: "عنب 🍇", requiredKg: 1, pricePerKg: 4 },
+            { item: "apple", itemName: "تفاح 🍎", requiredKg: 3, pricePerKg: 2 },
+            { item: "lemon", itemName: "ليمون 🍋", requiredKg: 4, pricePerKg: 3 }
+        ];
+
+        let currentLevel = 0;
+        let errorsCount = 0;
+        let currentWeightOnScale = 0;
+        let currentPaidAmount = 0;
+        let gameState = "START"; 
+
+        const instructionText = document.getElementById("instruction-text");
+        const scaleScreen = document.getElementById("scale-screen");
+        const scalePlate = document.getElementById("scale-plate");
+        const gameContainer = document.getElementById("game-container");
+        const paymentArea = document.getElementById("payment-area");
+        const wallet = document.getElementById("wallet-coins");
+        const paidAmountText = document.getElementById("paid-amount-text");
+
+        function initGame() {
+            document.getElementById("start-screen").style.display = "none";
+            currentLevel = 0;
+            errorsCount = 0;
+            loadLevel();
+        }
+
+        function loadLevel() {
+            if (currentLevel >= levels.length) {
+                finishGame();
+                return;
+            }
+
+            let levelData = levels[currentLevel];
+            gameState = "WEIGHING";
+            currentWeightOnScale = 0;
+            currentPaidAmount = 0;
+            
+            scalePlate.innerHTML = '';
+            scaleScreen.innerText = "0 كغم";
+            paidAmountText.innerText = "0";
+            gameContainer.className = ""; 
+            paymentArea.classList.remove('active'); 
+            
+            generateMoney(); 
+
+            document.getElementById("level-text").innerText = `المرحلة: ${currentLevel + 1} / 5`;
+            instructionText.innerText = `الطلب: نحتاج (${levelData.requiredKg} كغم) من الـ ${levelData.itemName}.`;
+            
+            document.querySelectorAll('.fruit-box').forEach(box => box.classList.remove('highlight-target'));
+            document.getElementById(`box-${levelData.item}`).classList.add('highlight-target');
+        }
+
+        function handleFruitClick(fruitType, element) {
+            if (gameState !== "WEIGHING") return;
+            let levelData = levels[currentLevel];
+
+            if (fruitType !== levelData.item) {
+                showPopup("هذا الصنف غير مطلوب! ركز في الطلب بالأعلى.", true, true);
+                return;
+            }
+
+            flyElement(element, scalePlate, false, () => {
+                scalePlate.innerHTML += `<span style="font-size:18px;">${element.innerText}</span>`;
+                currentWeightOnScale++;
+                scaleScreen.innerText = `${currentWeightOnScale} كغم`;
+                gameContainer.className = "zoom-scale"; 
+
+                if (currentWeightOnScale === levelData.requiredKg) {
+                    gameState = "PAYING";
+                    document.getElementById(`box-${levelData.item}`).classList.remove('highlight-target');
+                    
+                    setTimeout(() => {
+                        let totalCost = levelData.requiredKg * levelData.pricePerKg;
+                        instructionText.innerText = `الحساب (${totalCost} دينار). ادفع المبلغ الصحيح في الصندوق.`;
+                        
+                        gameContainer.className = "zoom-payment"; 
+                        paymentArea.classList.add('active'); 
+                    }, 800);
+                } else if (currentWeightOnScale > levelData.requiredKg) {
+                    errorsCount++;
+                    showPopup("الوزن زائد! أعد المحاولة.", true);
+                    setTimeout(loadLevel, 2000);
+                }
+            });
+        }
+
+        function generateMoney() {
+            wallet.innerHTML = '';
+            const moneyArray = [
+                1,1,1,1,1,1, 
+                5,5,5, 
+                10,10,10, 
+                20,20,20
+            ];
+
+            moneyArray.forEach(val => {
+                let mny = document.createElement('div');
+                mny.className = `money-item val-${val}`;
+                mny.innerText = val;
+                mny.onclick = function() { handleMoneyClick(this, val); };
+                wallet.appendChild(mny);
+            });
+        }
+
+        function handleMoneyClick(element, value) {
+            if (gameState !== "PAYING") return;
+
+            flyElement(element, document.getElementById('cash-register'), true, () => {
+                element.style.display = "none";
+                currentPaidAmount += value; 
+                paidAmountText.innerText = currentPaidAmount;
+            });
+        }
+
+        function resetPayment() {
+            if (gameState !== "PAYING") return;
+            currentPaidAmount = 0;
+            paidAmountText.innerText = "0";
+            generateMoney(); 
+        }
+
+        function checkPayment() {
+            if (gameState !== "PAYING") return;
+
+            let levelData = levels[currentLevel];
+            let requiredAmount = levelData.requiredKg * levelData.pricePerKg;
+
+            if (currentPaidAmount === requiredAmount) {
+                showPopup("إجابة صحيحة! حساب دقيق يا بطل 🌟", false, true);
+                currentLevel++;
+                setTimeout(loadLevel, 2000);
+            } else {
+                errorsCount++;
+                showPopup(`الحساب خاطئ! المجموع المطلوب ${requiredAmount} دينار. جرب مرة أخرى.`, true, true);
+                resetPayment(); 
+            }
+        }
+
+        function flyElement(sourceElement, targetContainer, isMoney, callback) {
+            let rectSrc = sourceElement.getBoundingClientRect();
+            let rectTar = targetContainer.getBoundingClientRect();
+            
+            let flyingClone = document.createElement('div');
+            flyingClone.innerHTML = sourceElement.innerHTML;
+            flyingClone.className = "flying-element " + (isMoney ? sourceElement.className : "");
+            
+            if(!isMoney) {
+                flyingClone.style.fontSize = "35px";
+            }
+
+            flyingClone.style.left = rectSrc.left + "px";
+            flyingClone.style.top = rectSrc.top + "px";
+            document.body.appendChild(flyingClone);
+
+            setTimeout(() => {
+                flyingClone.style.left = (rectTar.left + rectTar.width/2 - 15) + "px";
+                flyingClone.style.top = (rectTar.top + rectTar.height/2 - 15) + "px";
+                flyingClone.style.opacity = "0.5";
+                flyingClone.style.transform = "scale(0.5)";
+            }, 20);
+
+            setTimeout(() => {
+                document.body.removeChild(flyingClone);
+                if(callback) callback();
+            }, 400);
+        }
+
+        let autoCloseTimer;
+        function showPopup(text, isError, autoClose = false) {
+            const messageScreen = document.getElementById("message-screen");
+            const msgBtn = document.getElementById("msg-btn");
+            
+            document.getElementById("msg-text").innerHTML = text;
+            messageScreen.style.display = "flex";
+            msgBtn.style.display = autoClose ? "none" : "block";
+            messageScreen.querySelector('.message-content').style.borderColor = isError ? "#e74c3c" : "#2ecc71";
+            
+            clearTimeout(autoCloseTimer);
+            if(autoClose) {
+                autoCloseTimer = setTimeout(closeMessage, 2500);
+            }
+        }
+
+        function closeMessage() {
+            document.getElementById("message-screen").style.display = "none";
+        }
+
+        function finishGame() {
+            gameContainer.className = "";
+            paymentArea.classList.remove('active');
+            instructionText.innerText = "انتهت اللعبة!";
+            
+            let finalMsg = "";
+            if (errorsCount === 0) {
+                finalMsg = "🎉 إنجاز مذهل على الهاتف! 🎉<br><br>لقد أنهيت جميع المراحل بذكاء وتركيز.<br>لقد حصلت على لقب:<br><br><b>⭐ (المشتري الذكي) ⭐</b>";
+            } else {
+                finalMsg = `عمل جيد جداً!<br>لكنك أخطأت (${errorsCount}) مرات.<br><br>لتستحق لقب (المشتري الذكي) أعد المحاولة دون ارتكاب أي خطأ!`;
+            }
+
+            document.getElementById("msg-text").innerHTML = finalMsg;
+            const messageScreen = document.getElementById("message-screen");
+            messageScreen.querySelector('.message-content').style.borderColor = "#8e44ad";
+            const msgBtn = document.getElementById("msg-btn");
+            msgBtn.innerText = "العب من جديد";
+            msgBtn.style.display = "inline-block";
+            msgBtn.onclick = () => { closeMessage(); initGame(); };
+            messageScreen.style.display = "flex";
+        }
+    </script>
+</body>
+</html>
